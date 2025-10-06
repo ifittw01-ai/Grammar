@@ -3,7 +3,7 @@
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-white mb-2">Grammar Study Buddy</h1>
+        <h1 class="text-4xl font-bold text-white mb-2">Grammar Study Buddy !</h1>
         <p class="text-white/80 text-lg">Get instant grammar feedback on your sentences</p>
       </div>
 
