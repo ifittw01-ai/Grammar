@@ -8,6 +8,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Private keys - only available server-side
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseKey: process.env.SUPABASE_KEY || '',
     
     // Public keys - exposed to the client
     public: {

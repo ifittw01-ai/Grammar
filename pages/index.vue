@@ -211,15 +211,25 @@ const checkGrammar = async () => {
 
     result.value = response
     
-    // Add to history (you can connect this to backend later)
-    historyItems.value.unshift({
-      sentence: originalSentence.value,
-      isCorrect: response.isCorrect,
-      correctedSentence: response.correctedSentence,
-      feedback: response.feedback,
-      suggestions: response.suggestions,
-      timestamp: formatTimestamp()
-    })
+    // Save to Supabase
+    try {
+      await $fetch('/api/history/save', {
+        method: 'POST',
+        body: {
+          sentence: originalSentence.value,
+          isCorrect: response.isCorrect,
+          correctedSentence: response.correctedSentence,
+          feedback: response.feedback,
+          suggestions: response.suggestions
+        }
+      })
+      
+      // Reload history to get the latest from database
+      await loadHistory()
+    } catch (saveError) {
+      console.error('Failed to save history:', saveError)
+      // Still show result even if saving fails
+    }
     
     selectedHistoryIndex.value = null
   } catch (err: any) {
@@ -262,6 +272,24 @@ const formatTimestamp = () => {
     minute: '2-digit'
   })
 }
+
+// Load history from Supabase
+const loadHistory = async () => {
+  try {
+    const response = await $fetch<{ success: boolean; data: HistoryItem[]; count: number }>('/api/history/load')
+    if (response.success) {
+      historyItems.value = response.data
+    }
+  } catch (err) {
+    console.error('Failed to load history:', err)
+    // Fail silently - history is not critical for the app to function
+  }
+}
+
+// Load history when component mounts
+onMounted(() => {
+  loadHistory()
+})
 </script>
 
 <style scoped>
