@@ -7,9 +7,53 @@
         <p class="text-white/80 text-lg">Get instant grammar feedback on your sentences</p>
       </div>
 
-      <!-- Main Card -->
-      <div class="max-w-4xl mx-auto">
-        <div class="glass-effect rounded-2xl p-8 shadow-2xl">
+      <!-- Two Column Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
+        <!-- History Panel (Left Side) -->
+        <div class="lg:col-span-4">
+          <div class="glass-effect rounded-2xl p-6 shadow-2xl h-[calc(100vh-200px)] sticky top-8">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-2xl font-bold text-gray-800">歷史</h2>
+              <span class="text-sm text-gray-600">{{ historyItems.length }} 項</span>
+            </div>
+            
+            <!-- History List -->
+            <div class="overflow-y-auto h-[calc(100%-50px)] space-y-3 pr-2 custom-scrollbar">
+              <!-- Empty State -->
+              <div v-if="historyItems.length === 0" class="text-center py-12">
+                <span class="text-6xl mb-4 block">📝</span>
+                <p class="text-gray-500 text-sm">尚無歷史紀錄</p>
+                <p class="text-gray-400 text-xs mt-2">您檢查過的句子會顯示在這裡</p>
+              </div>
+
+              <!-- History Items -->
+              <div 
+                v-for="(item, index) in historyItems" 
+                :key="index"
+                @click="viewHistoryItem(item)"
+                class="bg-white rounded-lg p-4 cursor-pointer hover:shadow-md transition-all duration-200 border-2 border-transparent hover:border-blue-300"
+                :class="selectedHistoryIndex === index ? 'border-blue-500 ring-2 ring-blue-200' : ''"
+              >
+                <!-- Status Icon -->
+                <div class="flex items-start gap-3">
+                  <span class="text-xl flex-shrink-0">{{ item.isCorrect ? '✅' : '❌' }}</span>
+                  <div class="flex-1 min-w-0">
+                    <!-- Sentence Preview -->
+                    <p class="text-sm font-medium text-gray-800 line-clamp-2 mb-1">
+                      "{{ item.sentence }}"
+                    </p>
+                    <!-- Timestamp -->
+                    <p class="text-xs text-gray-500">{{ item.timestamp }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content (Right Side) -->
+        <div class="lg:col-span-8">
+          <div class="glass-effect rounded-2xl p-8 shadow-2xl">
           <!-- Input Section -->
           <div class="mb-8">
             <label for="sentence" class="block text-gray-700 font-semibold mb-3 text-lg">
@@ -115,6 +159,7 @@
             </ol>
           </div>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -128,11 +173,22 @@ interface GrammarResult {
   suggestions: string[]
 }
 
+interface HistoryItem {
+  sentence: string
+  isCorrect: boolean
+  correctedSentence: string | null
+  feedback: string
+  suggestions: string[]
+  timestamp: string
+}
+
 const inputSentence = ref('')
 const originalSentence = ref('')
 const isLoading = ref(false)
 const result = ref<GrammarResult | null>(null)
 const error = ref<string | null>(null)
+const historyItems = ref<HistoryItem[]>([])
+const selectedHistoryIndex = ref<number | null>(null)
 
 const checkGrammar = async () => {
   if (!inputSentence.value.trim()) {
@@ -154,6 +210,18 @@ const checkGrammar = async () => {
     })
 
     result.value = response
+    
+    // Add to history (you can connect this to backend later)
+    historyItems.value.unshift({
+      sentence: originalSentence.value,
+      isCorrect: response.isCorrect,
+      correctedSentence: response.correctedSentence,
+      feedback: response.feedback,
+      suggestions: response.suggestions,
+      timestamp: formatTimestamp()
+    })
+    
+    selectedHistoryIndex.value = null
   } catch (err: any) {
     console.error('Error:', err)
     error.value = err.data?.message || err.message || 'An unexpected error occurred. Please try again.'
@@ -167,6 +235,32 @@ const clearResults = () => {
   error.value = null
   inputSentence.value = ''
   originalSentence.value = ''
+  selectedHistoryIndex.value = null
+}
+
+const viewHistoryItem = (item: HistoryItem) => {
+  // Find the index of the clicked item
+  selectedHistoryIndex.value = historyItems.value.findIndex(h => h === item)
+  
+  // Display the history item in the results section
+  result.value = {
+    isCorrect: item.isCorrect,
+    correctedSentence: item.correctedSentence,
+    feedback: item.feedback,
+    suggestions: item.suggestions
+  }
+  originalSentence.value = item.sentence
+  error.value = null
+}
+
+const formatTimestamp = () => {
+  const now = new Date()
+  return now.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 </script>
 
@@ -179,6 +273,33 @@ const clearResults = () => {
   backdrop-filter: blur(16px) saturate(180%);
   background-color: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(209, 213, 219, 0.3);
+}
+
+/* Custom Scrollbar for History Panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(243, 244, 246, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
+}
+
+/* Line Clamp Utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
 
